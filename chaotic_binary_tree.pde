@@ -1,12 +1,19 @@
-
-final int ITERS = 13;//number of iterations to draw the tree
-final float ANGLE_FACTOR = PI/2;//constant for setting the angle factor of the tree
-final float SHRINK_FACTOR = 0.7;
-final int LINE_STEPS = 50;
+//*SETTINGS FOR ANIMATIONS*
+//LINE_STEPS = 10
+final int ITERS = 11;//number of iterations to draw the tree
+final float ANGLE_FACTOR = PI/3;//constant for setting the angle factor of the tree
+final float ANGLE_SHAKE = PI/6;
+final float LENGTH_SHAKE = 0.9;//percentage value from 0-1 delimiting how much a line can shrink
+final float SHRINK_FACTOR = 0.67;
+final int LINE_STEPS = 10;
 final int SW=700, SH=500;
 final float TRUNK_LEN = 150;//initial tree trunk length
 final float TRUNK_ANGLE = -90;//initial trunk angle from the ground
+final float MAX_END_FRAMES = 15;//how many frames to draw after the tree is finished being drawn (for gif export).
+
 binTree bTree;
+int endFramesDrawn;
+
 void setup(){
   strokeWeight(0.5);
   size(SW,SH);
@@ -14,12 +21,16 @@ void setup(){
   //create a new tree object
   //starting point will be x in the middle, y 2/3 down from the top
   bTree = new binTree(SW/2, SH-(SH/6), TRUNK_LEN, TRUNK_ANGLE, ITERS);
+  endFramesDrawn = 0;
 }
 
 void draw(){
   bTree.draw_me();
-  if(!bTree.finished){
+  if(!bTree.finished || endFramesDrawn < MAX_END_FRAMES){
     //saveFrame("btree###.gif");
+    if(bTree.finished){
+       ++endFramesDrawn; 
+    }
   }
 }
 
@@ -50,6 +61,8 @@ class binTree{
   float start_length;//length of the first line to be drawn
   float current_length;//the length of the current iteration of leaves
   float shrink_factor;//amount to shrink the lines each time
+  float angle_shake_range;//the range at which the angle will vary randomly
+  float length_shake_range;//the range at which the length will vary randomly
   int line_steps;//how many steps to draw each line
   float angle_factor;//how much to modify the angle each level
   int iterations;//how many levels of the tree to draw
@@ -78,6 +91,8 @@ class binTree{
     current_step = 0;
     current_length = start_length;
     angle_factor = ANGLE_FACTOR;
+    angle_shake_range = ANGLE_SHAKE;
+    length_shake_range = LENGTH_SHAKE;
     tree = new ArrayList<easeLine>();
   }
   
@@ -98,19 +113,24 @@ class binTree{
     
     //first set the length of the new leaves using the shrink_factor
     current_length *= shrink_factor;
-    //create a temporary value to store the angle(in radians) of the seeding branch
-    float temp_angle;
-    //create two temp points to seed new branches
-    Point p1,p2;
-    //create temporary variable to store leaf_index,
-    //set leaf_index to qual start of next series of leaves
-    int temp_index = leaf_index;
+    float temp_angle;//temp value to store angle of seeding branch
+    Point p1,p2;//temp points to seed new branches
+    float randAngle1, randAngle2;//these store randomly generated angles.
+    float randLength1,randLength2;//will store the random value generated that determines the length
+    int temp_index = leaf_index;//temporary variable to store leaf_index,
+    
+    //set leaf_index to qual start of next series of leaves.
     leaf_index = tree.size();
     for(int i = temp_index; i < leaf_index; ++i){
+      //generate random shake values.
+      randLength1 = random(-length_shake_range/2,length_shake_range/2);
+      randLength2 = random(-length_shake_range/2,length_shake_range/2);
+      randAngle1 = random(-angle_shake_range/2,angle_shake_range/2);
+      randAngle2 = random(-angle_shake_range/2,angle_shake_range/2);
       temp_angle=tree.get(i).getAngle();
       //two new points will be created
-      p1 = new Point(tree.get(i).p2.x+(current_length*cos(temp_angle+angle_factor)), tree.get(i).p2.y+(current_length*sin(temp_angle+angle_factor)));
-      p2 = new Point(tree.get(i).p2.x+(current_length*cos(temp_angle-angle_factor)), tree.get(i).p2.y+(current_length*sin(temp_angle-angle_factor)));
+      p1 = new Point(tree.get(i).p2.x+((1-randLength1)*current_length*cos(temp_angle+angle_factor+randAngle1)), tree.get(i).p2.y+((1-randLength1)*current_length*sin(temp_angle+angle_factor+randAngle1)));
+      p2 = new Point(tree.get(i).p2.x+((1-randLength2)*current_length*cos(temp_angle-angle_factor+randAngle2)), tree.get(i).p2.y+((1-randLength2)*current_length*sin(temp_angle-angle_factor+randAngle2)));
 
       tree.add(new easeLine( tree.get(i).p2, p1, line_steps));
       tree.add(new easeLine( tree.get(i).p2, p2, line_steps));
