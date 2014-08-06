@@ -127,6 +127,8 @@ class binTree{
       randLength2 = random(-length_shake_range/2,length_shake_range/2);
       randAngle1 = random(-angle_shake_range/2,angle_shake_range/2);
       randAngle2 = random(-angle_shake_range/2,angle_shake_range/2);
+      //the new length and new angle of each leaf is based on the one before it.
+      current_length = tree.get(i).getLength() * shrink_factor;
       temp_angle=tree.get(i).getAngle();
       //two new points will be created
       p1 = new Point(tree.get(i).p2.x+((1-randLength1)*current_length*cos(temp_angle+angle_factor+randAngle1)), tree.get(i).p2.y+((1-randLength1)*current_length*sin(temp_angle+angle_factor+randAngle1)));
@@ -175,13 +177,11 @@ class easeLine{
   Point p1,p2;
   int max_steps;//The maximum number of "frames" for drawing a line
   int current_step;
-  float lineDist;//distance between the two lines
   float DY,DX;
   boolean finished;
   void init(){
     finished = false;
     current_step = 0;
-    lineDist = pointDist(p1,p2);
   }
   easeLine(Point start_point, Point end_point, int maxSteps){
     p1 = start_point;
@@ -201,6 +201,7 @@ class easeLine{
         //from p1 to p2
         //decomp:
         //1) get distance between 2 points
+        float tempLength = getLength();
         //2) get percentage distance between the two points
         float percent = float(current_step)/max_steps;
         float eased = expo(percent);
@@ -208,7 +209,7 @@ class easeLine{
         //3a) get angle of line between p1 and p2
         float angle = getAngle();//in radians
         //3b) use cos/sin to draw line w/ polar coordinates
-        line(p1.x,p1.y,p1.x+(cos(angle)*lineDist*eased),p1.y+(sin(angle)*lineDist*eased));
+        line(p1.x,p1.y,p1.x+(cos(angle)*tempLength*eased),p1.y+(sin(angle)*tempLength*eased));
         ++current_step;
       }else{
         //draw the line normally
@@ -217,13 +218,13 @@ class easeLine{
       }
       
   }
+  //getLength() replaces the lineDist memeber variable,
+  //this is to make the easeLine class more dynamic and versatile.
+  float getLength(){
+      return sqrt(pow(p2.y-p1.y,2)+pow(p2.x-p1.x,2));
+  }
   float getAngle(){
     return atan2(p2.y-p1.y,p2.x-p1.x);
-  }
-  float pointDist(Point p0, Point p1){
-    float result;
-    result = sqrt(pow(p1.y-p0.y,2)+pow(p1.x-p0.x,2));
-    return result;
   }
   final float e = 2.7182818284590;//constant delimiting the natural number, e
   //This function is 
